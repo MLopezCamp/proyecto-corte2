@@ -13,7 +13,7 @@ services:
       - pg_data:/var/lib/postgresql/data
 
   web:
-    image: ragomez333/saleor:latest
+    image: ragomez333/saleor:803613b3
     container_name: saleor_web
     depends_on:
       - db
