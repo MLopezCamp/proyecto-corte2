@@ -3,6 +3,7 @@ services:
   db:
     image: postgres:15
     container_name: saleor_db
+    restart: always
     environment:
       POSTGRES_USER: saleor
       POSTGRES_PASSWORD: saleor
@@ -11,16 +12,6 @@ services:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-
-  web:
-    image: ragomez333/saleor:803613b3
-    container_name: saleor_web
-    depends_on:
-      - db
-    environment:
-      DATABASE_URL: postgres://saleor:saleor@db:5432/saleor
-    ports:
-      - "8000:8000"
 
 volumes:
   pg_data:
