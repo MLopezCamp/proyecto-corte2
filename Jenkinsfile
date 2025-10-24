@@ -66,15 +66,15 @@ pipeline {
                     sh "sleep 15"
 
                     echo "Ejecutando migraciones..."
-                    sh "docker exec saleor python3 saleor/saleor/app/manage.py migrate"
+                    sh "docker exec saleor python3 saleor/manage.py migrate"
 
                     echo "Creando superusuario..."
                     sh '''
-                    docker exec saleor python3 saleor/saleor/app/manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(email='admin@saleor.io').exists() or User.objects.create_superuser('admin@saleor.io', 'admin1234'); print('Superusuario creado correctamente')"
+                    docker exec saleor python3 saleor/manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(email='admin@saleor.io').exists() or User.objects.create_superuser('admin@saleor.io', 'admin1234'); print('Superusuario creado correctamente')"
                     '''
 
                     echo "Poblando base de datos..."
-                    sh "docker exec saleor python3 saleor/saleor/app/manage.py populatedb --createsuperuser"
+                    sh "docker exec saleor python3 saleor/manage.py populatedb --createsuperuser"
                 }
             }
         }
