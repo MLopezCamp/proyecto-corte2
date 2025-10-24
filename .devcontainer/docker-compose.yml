@@ -2,6 +2,7 @@ version: "3.8"
 
 services:
   saleor:
+    container_name: saleor
     image: ragomez333/saleor:latest
     build:  # 👈 si la imagen no existe, Jenkins la construirá desde aquí
       context: ..
