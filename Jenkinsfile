@@ -4,7 +4,7 @@ pipeline {
     environment {
         REGISTRY = 'docker.io'
         IMAGE_NAME = 'ragomez333/saleor'
-        COMPOSE_FILE = 'docker-compose.yml'
+        COMPOSE_FILE = '.devcontainer/docker-compose.yml'
     }
 
     stages {
@@ -44,7 +44,7 @@ pipeline {
                         sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin ${REGISTRY}"
                         sh "docker push ${IMAGE_TAG}"
 
-                        // Subir también como latest
+                        // Etiqueta como latest
                         sh "docker tag ${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:latest"
                         sh "docker push ${REGISTRY}/${IMAGE_NAME}:latest"
                     }
@@ -59,28 +59,28 @@ pipeline {
                     sh "docker compose -f ${COMPOSE_FILE} down -v || true"
 
                     echo "📦 Levantando servicios..."
-                    sh "docker compose -f ${COMPOSE_FILE} pull || true"
+                    sh "docker compose -f ${COMPOSE_FILE} pull"
                     sh "docker compose -f ${COMPOSE_FILE} up -d"
 
                     echo "⏳ Esperando que la base de datos esté lista..."
-                    sh "sleep 20"
+                    sh "sleep 15"
 
                     echo "⚙️ Ejecutando migraciones..."
-                    sh "docker exec saleor python3 /app/saleor/saleor/app/manage.py migrate || true"
+                    sh "docker exec saleor python3 /app/saleor/saleor/app/manage.py migrate"
 
                     echo "👤 Creando superusuario..."
                     sh '''
                         docker exec saleor python3 /app/saleor/saleor/app/manage.py shell -c "
 from django.contrib.auth import get_user_model;
 User = get_user_model();
-if not User.objects.filter(email='admin@saleor.io').exists():
-    User.objects.create_superuser('admin@saleor.io', 'admin1234')
-print('✅ Superusuario verificado o creado.')
+User.objects.filter(email='admin@saleor.io').exists() or 
+    User.objects.create_superuser('admin@saleor.io', 'admin1234');
+print('✅ Superusuario creado correctamente')
 "
                     '''
 
                     echo "📦 Poblando base de datos..."
-                    sh "docker exec saleor python3 /app/saleor/saleor/app/manage.py populatedb --createsuperuser || true"
+                    sh "docker exec saleor python3 /app/saleor/saleor/app/manage.py populatedb --createsuperuser"
                 }
             }
         }
