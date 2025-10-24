@@ -15,6 +15,9 @@ services:
       - redis
     volumes:
       - ..:/app
+    # 👇 Exponer el puerto para acceso local y pipeline
+    ports:
+      - 8000:8000
 
   dashboard:
     image: ghcr.io/saleor/saleor-dashboard:3.20.5
@@ -32,6 +35,7 @@ services:
     environment:
       - POSTGRES_USER=saleor
       - POSTGRES_PASSWORD=saleor
+      - POSTGRES_DB=saleor  # 👈 agregado por compatibilidad con el pipeline
 
   redis:
     image: library/redis:7.0-alpine
@@ -47,6 +51,19 @@ services:
       - 1025:1025 # SMTP Server
       - 8025:8025 # Mailpit UI
     restart: unless-stopped
+
+  # 👇 Nuevo contenedor para gestionar visualmente la base de datos
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - 5050:80
+    depends_on:
+      - db
 
 volumes:
   saleor-db:

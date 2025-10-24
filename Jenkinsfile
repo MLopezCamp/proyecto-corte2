@@ -4,6 +4,7 @@ pipeline {
     environment {
         REGISTRY = 'docker.io'
         IMAGE_NAME = 'ragomez333/saleor'
+        COMPOSE_FILE = 'docker-compose.yml'
     }
 
     stages {
@@ -19,7 +20,7 @@ pipeline {
                 script {
                     COMMIT = sh(returnStdout: true, script: 'git rev-parse --short=8 HEAD').trim()
                     IMAGE_TAG = "${REGISTRY}/${IMAGE_NAME}:${COMMIT}"
-                    echo "Imagen a construir: ${IMAGE_TAG}"
+                    echo "🧩 Imagen a construir: ${IMAGE_TAG}"
                 }
             }
         }
@@ -42,8 +43,48 @@ pipeline {
                     script {
                         sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin ${REGISTRY}"
                         sh "docker push ${IMAGE_TAG}"
-                        echo "Imagen subida correctamente: ${IMAGE_TAG}"
+
+                        // Subir también como latest
+                        sh "docker tag ${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:latest"
+                        sh "docker push ${REGISTRY}/${IMAGE_NAME}:latest"
                     }
+                }
+            }
+        }
+
+        stage('Deploy containers') {
+            steps {
+                script {
+                    // Detiene y elimina contenedores anteriores
+                    sh "docker compose -f ${COMPOSE_FILE} down -v || true"
+
+                    // Levanta servicios desde docker-compose.yml
+                    sh "docker compose -f ${COMPOSE_FILE} pull"
+                    sh "docker compose -f ${COMPOSE_FILE} up -d"
+
+                    // Esperar que DB arranque
+                    echo "⏳ Esperando que la base de datos esté lista..."
+                    sh "sleep 15"
+
+                    // Ejecutar migraciones
+                    echo "⚙️ Ejecutando migraciones..."
+                    sh "docker exec saleor python3 /app/saleor/saleor/app/manage.py migrate"
+
+                    // Crear superusuario automáticamente
+                    echo "👤 Creando superusuario..."
+                    sh '''
+                        docker exec saleor python3 /app/saleor/saleor/app/manage.py shell -c "
+from django.contrib.auth import get_user_model;
+User = get_user_model();
+User.objects.filter(email='admin@saleor.io').exists() or 
+    User.objects.create_superuser('admin@saleor.io', 'admin1234');
+print('✅ Superusuario creado correctamente')
+"
+                    '''
+
+                    // Cargar datos iniciales
+                    echo "📦 Poblando base de datos..."
+                    sh "docker exec saleor python3 /app/saleor/saleor/app/manage.py populatedb --createsuperuser"
                 }
             }
         }
@@ -54,10 +95,10 @@ pipeline {
             cleanWs()
         }
         failure {
-            echo 'Build o push fallo'
+            echo '❌ Build o despliegue falló'
         }
         success {
-            echo 'Pipeline completado correctamente'
+            echo '✅ Pipeline completado correctamente: contenedores listos, migraciones y datos cargados'
         }
     }
 }
