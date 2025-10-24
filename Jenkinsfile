@@ -56,11 +56,11 @@ pipeline {
             steps {
                 script {
                     echo "Limpiando contenedores previos..."
-                    sh "docker-compose -f ${COMPOSE_FILE} down -v || true"
+                    sh "docker compose -f ${COMPOSE_FILE} down -v || true"
 
                     echo "Levantando servicios..."
-                    sh "docker-compose -f ${COMPOSE_FILE} pull"
-                    sh "docker-compose -f ${COMPOSE_FILE} up -d"
+                    sh "docker compose -f ${COMPOSE_FILE} pull"
+                    sh "docker compose -f ${COMPOSE_FILE} up -d"
 
                     echo "Esperando que la base de datos esté lista..."
                     sh "sleep 15"
