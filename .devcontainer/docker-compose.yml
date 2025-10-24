@@ -3,11 +3,10 @@ version: "3.8"
 services:
   saleor:
     container_name: saleor
+    image: ragomez333/saleor:latest
     build:
       context: ..
       dockerfile: .devcontainer/Dockerfile
-    image: ragomez333/saleor:latest
-    pull_policy: if_not_present
     command: sleep infinity
     env_file:
       - common.env
@@ -16,7 +15,7 @@ services:
       - db
       - redis
     volumes:
-      - .:/app
+      - ..:/app
     ports:
       - "8000:8000"
 
@@ -69,8 +68,5 @@ services:
 
 volumes:
   saleor-db:
-    driver: local
   saleor-redis:
-    driver: local
   pgadmin-data:
-    driver: local
